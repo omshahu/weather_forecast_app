@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WeatherSphere</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Leaflet Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+</head>
+<body>
+    <div class="mobile-container">
+
+        <!-- Header -->
+        <header class="app-header">
+            <div class="location-header">
+                <i class="fas fa-map-marker-alt"></i>
+                <h1 id="headerCity">WeatherSphere</h1>
+                <i class="fas fa-chevron-down small-icon"></i>
+            </div>
+            <div class="header-actions">
+                <button class="icon-btn" id="locationBtn"><i class="fas fa-location-crosshairs"></i></button>
+            </div>
+        </header>
+
+        <!-- Error Toast (hidden by default, only shows on .show) -->
+        <div id="errorMessage" class="error-toast"></div>
+
+        <!-- ══════════════ HOME TAB ══════════════ -->
+        <main class="main-content tab-view" id="homeView">
+
+            <!-- Search -->
+            <div class="search-wrapper">
+                <i class="fas fa-search search-icon" id="searchIconBtn" style="cursor:pointer;"></i>
+                <input type="text" id="cityInput" class="search-input" placeholder="Search city...">
+            </div>
+
+            <!-- Current Weather -->
+            <div id="weatherResult">
+                <div class="current-weather">
+                    <img id="mainIcon" class="weather-img" style="display:none;" alt="Weather">
+                    <h2 class="temp-display" id="mainTemp">--°</h2>
+                    <p class="weather-desc" id="mainDesc">Search a city to begin</p>
+                    <p class="feels-like" id="feelsLike">Feels like --°</p>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <i class="fas fa-wind"></i>
+                        <span class="metric-val" id="windVal">--</span>
+                        <span class="metric-label">Wind (m/s)</span>
+                    </div>
+                    <div class="metric-card">
+                        <i class="fas fa-droplet"></i>
+                        <span class="metric-val" id="humidityVal">--</span>
+                        <span class="metric-label">Humidity (%)</span>
+                    </div>
+                    <div class="metric-card">
+                        <i class="fas fa-gauge-high"></i>
+                        <span class="metric-val" id="pressureVal">--</span>
+                        <span class="metric-label">Pressure</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hourly Forecast -->
+            <div class="forecast-section" id="forecastSection" style="display:none;">
+                <div class="section-title">
+                    <h3>Today</h3>
+                    <span>5 Days</span>
+                </div>
+                <div class="forecast-slider" id="forecastContainer"></div>
+                <div class="chart-container">
+                    <canvas id="forecastChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 5-Day Daily -->
+            <div class="daily-section" id="dailySection" style="display:none;">
+                <div class="section-title">
+                    <h3><i class="fas fa-calendar-days" style="color:var(--accent);margin-right:6px;"></i>5-Day Forecast</h3>
+                </div>
+                <div id="dailyContainer" class="daily-container"></div>
+            </div>
+
+            <div style="height:90px;"></div>
+        </main>
+
+        <!-- ══════════════ MAP TAB ══════════════ -->
+        <main class="main-content tab-view" id="mapView" style="display:none; padding:0; overflow:hidden;">
+
+            <!-- Map instruction bar -->
+            <div class="map-topbar">
+                <i class="fas fa-hand-pointer"></i>
+                <span>Tap anywhere on the map to get weather</span>
+            </div>
+
+            <!-- Leaflet map fills the rest -->
+            <div id="leafletMap"></div>
+
+            <!-- Floating weather popup from map click -->
+            <div class="map-weather-popup" id="mapWeatherPopup" style="display:none;">
+                <div class="map-popup-inner">
+                    <button class="map-popup-close" id="mapPopupClose"><i class="fas fa-times"></i></button>
+                    <div class="map-popup-header">
+                        <img id="mapIcon" class="map-popup-icon" src="" alt="">
+                        <div>
+                            <p class="map-popup-city" id="mapCity">—</p>
+                            <p class="map-popup-country" id="mapCountry">—</p>
+                        </div>
+                    </div>
+                    <div class="map-popup-temp" id="mapTemp">--°</div>
+                    <p class="map-popup-desc" id="mapDesc">—</p>
+                    <div class="map-popup-stats">
+                        <span><i class="fas fa-wind"></i> <span id="mapWind">--</span> m/s</span>
+                        <span><i class="fas fa-droplet"></i> <span id="mapHumidity">--</span>%</span>
+                    </div>
+                    <button class="map-popup-use-btn" id="mapUseBtn">
+                        <i class="fas fa-arrow-right"></i> Use This Location
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- ══════════════ SAVED TAB ══════════════ -->
+        <main class="main-content tab-view" id="savedView" style="display:none; padding-top:20px;">
+            <div class="section-title">
+                <h3>Saved Locations</h3>
+            </div>
+            <div id="savedList" style="display:flex; flex-direction:column; gap:12px; margin-top:15px;"></div>
+            <div style="height:80px;"></div>
+        </main>
+
+        <!-- ══════════════ SETTINGS TAB ══════════════ -->
+        <main class="main-content tab-view" id="settingsView" style="display:none; padding-top:20px;">
+            <div class="section-title">
+                <h3>Settings</h3>
+            </div>
+            <div style="background:var(--card-bg); border-radius:20px; padding:20px; margin-top:15px; border:1px solid var(--card-border);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <span style="color:white; font-weight:500;">
+                        <i class="fas fa-temperature-half" style="color:var(--accent); margin-right:10px;"></i>Temperature Unit
+                    </span>
+                    <select id="unitSelect">
+                        <option value="metric">Celsius (°C)</option>
+                        <option value="imperial">Fahrenheit (°F)</option>
+                    </select>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="color:white; font-weight:500;">
+                        <i class="fas fa-moon" style="color:var(--accent); margin-right:10px;"></i>Theme
+                    </span>
+                    <span style="color:var(--text-secondary); font-size:0.9rem;">Dark Auto</span>
+                </div>
+            </div>
+            <div style="text-align:center; margin-top:30px;">
+                <p style="color:var(--text-secondary); font-size:0.8rem;">WeatherSphere Enterprise Mobile<br>v2.1.0</p>
+            </div>
+            <div style="height:80px;"></div>
+        </main>
+
+        <!-- Bottom Nav -->
+        <nav class="bottom-nav">
+            <div class="nav-item active" data-tab="homeView">
+                <i class="fas fa-house"></i><span>Home</span>
+            </div>
+            <div class="nav-item" data-tab="mapView">
+                <i class="fas fa-map"></i><span>Map</span>
+            </div>
+            <div class="nav-item" data-tab="savedView">
+                <i class="fas fa-bookmark"></i><span>Saved</span>
+            </div>
+            <div class="nav-item" data-tab="settingsView">
+                <i class="fas fa-gear"></i><span>Settings</span>
+            </div>
+        </nav>
+
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay" class="loading-overlay">
+            <div class="spinner"></div>
+            <p>Fetching weather...</p>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
