@@ -93,7 +93,6 @@ const COUNTRIES = [
 let map, geoLayer, tempTileLayer;
 let weatherData = {};
 let unit = 'C';
-let autoRefreshId = null;
 let geoJSON = null;
 
 const $loading    = document.getElementById('map-loading');
@@ -353,12 +352,7 @@ document.getElementById('refresh-btn').addEventListener('click', async ()=>{
   btn.classList.remove('spinning');
 });
 
-document.getElementById('auto-refresh-toggle').addEventListener('change', e=>{
-  if (e.target.checked) {
-    autoRefreshId=setInterval(async()=>{ weatherData={}; await fetchAllWeather(); },5*60*1000);
-    showToast('Auto-refresh ON — every 5 minutes','success');
-  } else { clearInterval(autoRefreshId); showToast('Auto-refresh OFF'); }
-});
+
 
 // ── Toast ─────────────────────────────────────────────────────────
 function showToast(msg, type='') {

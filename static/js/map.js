@@ -95,7 +95,6 @@ let map, geoLayer, tempTileLayer;
 let owmKey        = '';
 let weatherData   = {};   // ISO-A2 → weather object
 let unit          = 'C';
-let autoRefreshId = null;
 let geoJSON       = null;
 
 // ── DOM refs ──────────────────────────────────────────────────────
@@ -418,19 +417,7 @@ document.getElementById('refresh-btn').addEventListener('click', async () => {
   btn.classList.remove('spinning');
 });
 
-document.getElementById('auto-refresh-toggle').addEventListener('change', e => {
-  if (e.target.checked) {
-    autoRefreshId = setInterval(async () => {
-      if (tempTileLayer) { tempTileLayer.remove(); addTempLayer(owmKey); }
-      weatherData = {};
-      await fetchAllWeather();
-    }, 5 * 60 * 1000);
-    showToast('Auto-refresh ON — every 5 minutes', 'success');
-  } else {
-    clearInterval(autoRefreshId);
-    showToast('Auto-refresh OFF');
-  }
-});
+
 
 // ═══════════════════════ TOAST ═══════════════════════════════════
 function showToast(msg, type='') {
