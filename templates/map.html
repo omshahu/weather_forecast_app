@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🌍 Global Temperature Map | Weather Dashboard</title>
+  <meta name="description" content="Interactive real-time world temperature map with color-coded country heat overlays, live OpenWeatherMap data, and detailed weather panels." />
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <!-- Map CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/map.css') }}" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════ HEADER ══ -->
+  <header class="site-header">
+    <div class="header-brand">
+      <span class="brand-icon">🌍</span>
+      <div class="brand-text">
+        <span class="brand-name">WeatherMap</span>
+        <span class="brand-tag">Global Temperature Dashboard</span>
+      </div>
+    </div>
+
+    <!-- Search bar -->
+    <div class="search-wrapper" id="search-wrapper">
+      <span class="search-icon">🔍</span>
+      <input id="country-search" type="text" placeholder="Search country…" autocomplete="off" aria-label="Search country" />
+      <div id="search-dropdown" class="search-dropdown" role="listbox" aria-label="Country suggestions"></div>
+    </div>
+
+    <!-- Controls -->
+    <div class="header-controls">
+      <!-- Unit toggle -->
+      <div class="unit-toggle" id="unit-toggle" role="group" aria-label="Temperature unit">
+        <button class="unit-btn active" id="btn-celsius" data-unit="C" aria-pressed="true">°C</button>
+        <button class="unit-btn" id="btn-fahrenheit" data-unit="F" aria-pressed="false">°F</button>
+      </div>
+      <!-- Auto-refresh -->
+      <button class="ctrl-btn" id="refresh-btn" title="Refresh data now">
+        <span class="refresh-icon">↻</span> Refresh
+      </button>
+      <div class="auto-refresh-wrap">
+        <label class="toggle-label" for="auto-refresh-toggle">Auto 5 min</label>
+        <input type="checkbox" id="auto-refresh-toggle" class="toggle-checkbox" />
+        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+      </div>
+    </div>
+
+    <!-- Back link -->
+    <a href="/" class="back-link" title="Back to main app">← Main App</a>
+  </header>
+
+  <!-- ═══════════════════════════════════════════════════ MAP ════ -->
+  <main id="map-container">
+    <div id="world-map"></div>
+
+    <!-- Loading overlay -->
+    <div id="map-loading" class="map-loading">
+      <div class="loader-ring"></div>
+      <p class="loader-text">Loading global temperature data…</p>
+      <p class="loader-sub" id="loader-progress">Fetching 0 / 0 countries</p>
+    </div>
+
+    <!-- ────────── Color legend ────────── -->
+    <div class="map-legend glass" id="map-legend">
+      <div class="legend-title">🌡️ Temperature Scale</div>
+      <div class="legend-bar"></div>
+      <div class="legend-labels">
+        <span>-20°C</span><span>0°C</span><span>20°C</span><span>40°C+</span>
+      </div>
+      <div class="legend-tiers">
+        <div class="tier"><span class="swatch" style="background:#00008B"></span><span>❄️ &lt;-10°C</span></div>
+        <div class="tier"><span class="swatch" style="background:#4169E1"></span><span>🧊 -10–0°C</span></div>
+        <div class="tier"><span class="swatch" style="background:#32CD32"></span><span>🌿 0–10°C</span></div>
+        <div class="tier"><span class="swatch" style="background:#FFD700"></span><span>☀️ 10–20°C</span></div>
+        <div class="tier"><span class="swatch" style="background:#FF8C00"></span><span>🔥 20–30°C</span></div>
+        <div class="tier"><span class="swatch" style="background:#DC143C"></span><span>🌋 30–40°C</span></div>
+        <div class="tier"><span class="swatch" style="background:#6B0000"></span><span>💀 &gt;40°C</span></div>
+      </div>
+    </div>
+
+    <!-- ────────── Stats bar ────────── -->
+    <div class="map-stats glass" id="map-stats">
+      <div class="stat-item">
+        <span class="stat-label">Countries Loaded</span>
+        <span class="stat-value" id="stat-loaded">0</span>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="stat-item">
+        <span class="stat-label">Hottest</span>
+        <span class="stat-value hot" id="stat-hot">—</span>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="stat-item">
+        <span class="stat-label">Coldest</span>
+        <span class="stat-value cold" id="stat-cold">—</span>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="stat-item">
+        <span class="stat-label">Last Updated</span>
+        <span class="stat-value" id="stat-time">—</span>
+      </div>
+    </div>
+  </main>
+
+  <!-- ═══════════════════════════════════════════════ DETAIL PANEL ══ -->
+  <aside class="detail-panel glass" id="detail-panel" aria-hidden="true">
+    <button class="panel-close" id="panel-close" aria-label="Close detail panel">✕</button>
+
+    <div class="panel-header">
+      <div class="panel-flag" id="panel-flag"></div>
+      <div class="panel-title-wrap">
+        <h2 class="panel-country" id="panel-country">Country</h2>
+        <span class="panel-time" id="panel-time"></span>
+      </div>
+    </div>
+
+    <div class="panel-temp-display">
+      <span class="panel-temp-big" id="panel-temp">—</span>
+      <span class="panel-feels" id="panel-feels"></span>
+    </div>
+
+    <div class="panel-condition" id="panel-condition">
+      <span class="cond-icon" id="panel-icon"></span>
+      <span class="cond-text" id="panel-desc"></span>
+    </div>
+
+    <div class="panel-grid">
+      <div class="panel-metric">
+        <span class="metric-icon">💧</span>
+        <span class="metric-val" id="pm-humidity">—</span>
+        <span class="metric-lbl">Humidity</span>
+      </div>
+      <div class="panel-metric">
+        <span class="metric-icon">💨</span>
+        <span class="metric-val" id="pm-wind">—</span>
+        <span class="metric-lbl">Wind</span>
+      </div>
+      <div class="panel-metric">
+        <span class="metric-icon">🔵</span>
+        <span class="metric-val" id="pm-pressure">—</span>
+        <span class="metric-lbl">Pressure</span>
+      </div>
+      <div class="panel-metric">
+        <span class="metric-icon">🌡️</span>
+        <span class="metric-val" id="pm-feelslike">—</span>
+        <span class="metric-lbl">Feels Like</span>
+      </div>
+    </div>
+
+    <div class="panel-temp-bar-wrap">
+      <div class="panel-temp-bar" id="panel-temp-bar">
+        <div class="bar-fill" id="panel-bar-fill"></div>
+        <div class="bar-marker" id="panel-bar-marker"></div>
+      </div>
+      <div class="bar-labels">
+        <span>-20°C</span><span>45°C+</span>
+      </div>
+    </div>
+
+    <div class="panel-cached-badge" id="panel-cached-badge" style="display:none">⚡ Cached Response</div>
+  </aside>
+
+  <!-- ═══════════════════════════════════════════════ TOOLTIP ══ -->
+  <div class="map-tooltip" id="map-tooltip">
+    <div class="tt-name" id="tt-name"></div>
+    <div class="tt-temp" id="tt-temp"></div>
+    <div class="tt-desc" id="tt-desc"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ TOAST ══ -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Map JS -->
+  <script src="{{ url_for('static', filename='js/map.js') }}"></script>
+</body>
+</html>

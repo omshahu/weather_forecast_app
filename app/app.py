@@ -211,6 +211,18 @@ def index():
     return render_template('index.html')
 
 
+@app.route('/map')
+def weather_map():
+    """Serve the interactive global temperature map dashboard"""
+    return render_template('map.html')
+
+
+@app.route('/api/config')
+def get_config():
+    """Return safe public config for the frontend (API key for map tiles)"""
+    return jsonify({'owm_key': config.OPENWEATHER_API_KEY}), 200
+
+
 @app.route('/api/weather')
 @rate_limit_middleware
 @cache_response(ttl_seconds=config.CACHE_TTL_SECONDS)
@@ -480,10 +492,11 @@ if __name__ == '__main__':
     print("\n" + "*"*70)
     print("  WEATHER FORECAST APPLICATION - ENTERPRISE EDITION  ")
     print("*"*70)
-    print(f"\n✓ Server running at: http://{config.HOST}:{config.PORT}")
-    print(f"✓ Health check: http://{config.HOST}:{config.PORT}/health")
-    print(f"✓ Metrics: http://{config.HOST}:{config.PORT}/metrics")
-    print("\n📊 API Endpoints:")
+    print(f"\n[OK] Server running at: http://{config.HOST}:{config.PORT}")
+    print(f"[OK] Health check: http://{config.HOST}:{config.PORT}/health")
+    print(f"[OK] Metrics: http://{config.HOST}:{config.PORT}/metrics")
+    print(f"[OK] Map dashboard: http://{config.HOST}:{config.PORT}/map")
+    print("\n[API] Endpoints:")
     print(f"   GET /api/weather?city=London")
     print(f"   GET /api/weather/forecast?city=London")
     print(f"   GET /api/weather/coordinates?lat=51.5074&lon=-0.1278")
